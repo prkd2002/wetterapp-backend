@@ -1,11 +1,10 @@
-const { v4: uuidv4 } = require('uuid');
+
 const cron = require('node-cron');
 const logger = require('../utils/logger');
 const weatherService = require('./weatherService');
 const pocketbaseService = require('./pocketbaseService');
 const config = require('config');
-const { timeStamp } = require('console');
-const { threadId } = require('worker_threads');
+
 
 
 class CollectorService {
@@ -206,7 +205,7 @@ class CollectorService {
     async updateCollector(id, updates) {
         try {
             // Get the current Config
-            const currentConfig = await pocketbaseService.getCollectorConfigById(id);
+            await pocketbaseService.getCollectorConfigById(id);
             logger.info(`${JSON.stringify(updates)}`)
 
             // Update in PocketBase

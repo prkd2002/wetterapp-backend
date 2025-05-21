@@ -46,7 +46,7 @@ app.get('/api/weather/collector/:id', weatherController.getWeatherByCollectorId)
 app.get('/api/weather/current/:location', weatherController.fetchCurrentWeather);
 
 // Error handling middleare
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
     logger.error(`Error: ${err.message}`);
     res.status(500).json({ error: err.message });
 });

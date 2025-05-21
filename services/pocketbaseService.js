@@ -15,7 +15,7 @@ class PocketbaseService {
 
 
 
-            const authData = await this.client.collection('users').authWithPassword(
+             await this.client.collection('users').authWithPassword(
                 config.get('pocketbase.adminEmail'),
                 config.get('pocketbase.adminPassword')
             );
@@ -98,7 +98,7 @@ class PocketbaseService {
                 return null;
 
             }
-            logger.info(`Found Weather Data with ID ${id}`);
+            
             
 
         } catch (error) {
@@ -170,7 +170,7 @@ class PocketbaseService {
             return records.items;
         } catch (error) {
             logger.info(`Failed to get collector configs: ${error.message}`);
-            throw error; A
+            throw error; 
         }
     }
 
