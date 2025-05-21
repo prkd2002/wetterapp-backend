@@ -5,6 +5,7 @@ const weatherService = require('./weatherService');
 const pocketbaseService = require('./pocketbaseService');
 const config = require('config');
 const { timeStamp } = require('console');
+const { threadId } = require('worker_threads');
 
 
 class CollectorService {
@@ -44,39 +45,62 @@ class CollectorService {
                 let weatherData;
                 if (collectorConfig.locationType == 'city') {
                     weatherData = await weatherService.getWeatherByCity(collectorConfig.location);
-                    logger.info(`"CollectorService: "${JSON.stringify(weatherData)}`)
+
                 } else if (collectorConfig.locationType === 'coordinates') {
                     const { lat, lon } = collectorConfig.coordinates;
+                    if (!lat || !lon) {
+                        throw new Error('Invalid coordinates provided');
+                    }
                     weatherData = await weatherService.getWeatherByCoordinates(lat, lon);
                 }
 
-                // Store only the attributes specified in the config, if any
-                if (collectorConfig.attributes && collectorConfig.attributes.length > 0) {
+                // Filter data if attributes are specified
+                if (collectorConfig.attributes && Array.isArray(collectorConfig.attributes) && collectorConfig.attributes.length > 0) {
                     const filteredData = {
                         location: weatherData.location,
                         timestamp: weatherData.timestamp
                     };
 
                     for (const attr of collectorConfig.attributes) {
-                        if (weatherData[attr] !== undefined) {
+                        if (Object.prototype.hasOwnProperty.call(weatherData, attr)) {
                             filteredData[attr] = weatherData[attr];
                         }
                     }
 
                     weatherData = filteredData;
-                    logger.info(`"CollectorService2: "${JSON.stringify(weatherData)}`)
-
                 }
+
+
 
                 // Add collector ID to link the data
                 weatherData.collector_id = collectorConfig.id;
+                logger.debug(`Processing weather data with collector ID: ${JSON.stringify(weatherData)}`);
 
-                // Store in PocketBase
-                await pocketbaseService.createWeatherData(weatherData);
+                // Determine if we need to create or update based on collector_id
+                try {
+                    logger.info(`CollectorConfig :   ${JSON.stringify(collectorConfig)}`);
+                    const existingRecords = await pocketbaseService.findWeatherDataByCollectorId(collectorConfig.id);
+                    logger.info(`existinRecords ${JSON.stringify(existingRecords)}`);
 
-                logger.info(`Collected weather data for ${collectorConfig.location}`);
+                    if (existingRecords) {
+                        // Update the most recent record
+                        const mostRecentRecord = existingRecords;
+                        const record = await pocketbaseService.updateWeatherData(mostRecentRecord.id, weatherData);
+                        logger.info(`Updated weather data for ${collectorConfig.localion || 'coordinates'} with ID: ${record.id}`);
+                    } else {
+                        // create new record
+                        const record = await pocketbaseService.createWeatherData(weatherData);
+                        logger.info(`Created new weather data for ${collectorConfig.location || 'coordinates'} with ID: ${record.id}`);
+                    }
+
+                } catch (dbError) {
+                    logger.error(`Database operation failed: ${dbError.message}`);
+                    throw dbError;
+                }
+
+
             } catch (error) {
-                logger.error(`Error collecting weather data for ${collectorConfig.location}: ${error.message}`);
+                logger.error(`Error collecting weather data for ${collectorConfig.location || 'coordinates'}: ${error.message}`);
             }
         };
 
@@ -86,7 +110,10 @@ class CollectorService {
 
         if (collectorConfig.cronExpression) {
             //Use cron expression if provided
-            job = cron.schedule(collectorConfig.cronExpression, task);
+            job = cron.schedule(collectorConfig.cronExpression, task, {
+                schedzled: true,
+                timezone: collectorConfig.timezone || 'UTC'
+            });
             logger.info(`Started collector for ${collectorConfig.location} with cron: ${collectorConfig.cronExpression}`);
 
         } else {
@@ -97,18 +124,25 @@ class CollectorService {
         }
 
         // Run the task immedaitely for the first time
-        task();
+        try {
+            task();
+        } catch (error) {
+            logger.error(`Initail task execution failed: ${error.message}`);
+        }
+
 
         // Store the job reference
         this.collectors.set(collectorConfig.id, {
             job,
-            config: collectorConfig
+            config: collectorConfig,
+            startTime: new Date()
         });
 
         return {
             id: collectorConfig.id,
-            location: collectorConfig.location,
-            status: 'running'
+            location: collectorConfig.location || `${collectorConfig.coordinates?.lat}, ${collectorConfig.coordinates?.lon}`,
+            status: 'running',
+            startedAt: new Date()
         };
 
     }
@@ -148,11 +182,11 @@ class CollectorService {
                 "interval": this.defaultInterval,
                 ...collectorConfig
             };
-         
+
             //logger.info(`Config: ${JSON.stringify(config,null,2)}`);
             // Save to PocketBase
             const savedConfig = await pocketbaseService.createCollectorConfig(config);
-    
+
 
             // Start the collector if active
             if (savedConfig.active) {
@@ -173,6 +207,7 @@ class CollectorService {
         try {
             // Get the current Config
             const currentConfig = await pocketbaseService.getCollectorConfigById(id);
+            logger.info(`${JSON.stringify(updates)}`)
 
             // Update in PocketBase
             const updateConfig = await pocketbaseService.updateCollectorConfig(id, updates);
@@ -237,10 +272,13 @@ class CollectorService {
     }
 
     getAllCollectors() {
-        const collectors = [];
+        const collectorsList = [];
 
-        for (const [id, collector] of this.collectors.entries) {
-            collectors.push({
+
+
+
+        for (const [id, collector] of this.collectors.entries()) {
+            collectorsList.push({
                 id,
                 localtion: collector.config.location,
                 locationtype: collector.config.locationType,
@@ -250,8 +288,10 @@ class CollectorService {
                 cronExpression: collector.config.cronExpression
             });
 
-            return collectors;
+
         }
+
+        return collectorsList;
     }
 
 }

@@ -8,12 +8,15 @@ const weatherController = require('./controllers/weatherController');
 // Initialize Express app
 const app = express();
 const port = config.get('server.port') || 3000;
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
 
 //Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Logging middleware
 app.use((req, res, next) => {

@@ -97,24 +97,28 @@ exports.deleteCollector = async (req, res) => {
 
 
 // Start a collector 
-exports.startCollector = async (read, res) => {
+exports.startCollector = async (req, res) => {
     try {
         const { id } = req.params;
 
         // Get the collector config from PocketBase
+        logger.info(`${id}`);
         const collectorConfig = await require('../services/pocketbaseService').getCollectorConfigById(id);
-
+        logger.info("1");
         if (!collectorConfig) {
             return res.status(404).json({ error: 'collector configuration not found' });
         }
+        logger.info("2");
 
         // Update active status if needed
         if (!collectorConfig.active) {
             await collectorService.updateCollector(id, { active: true });
         }
+        logger.info("3");
 
         // Start the collector
         const collector = await collectorService.startCollector(collectorConfig);
+        logger.info("4");
 
         res.status(200).json(collector);
     } catch (error) {
@@ -144,6 +148,6 @@ exports.stopCollector = async (req, res) => {
 
     } catch (error) {
         logger.error(`Error stopping collector: ${error.message}`);
-        res.status(500).json({ error: `Failed tpo stop collector` });
+        res.status(500).json({ error: `Failed to stop collector` });
     }
 }

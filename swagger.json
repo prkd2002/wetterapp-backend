@@ -1,0 +1,294 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "WetterApp Backend API",
+        "version": "1.0.0",
+        "description": "API zur Verwaltung von Wetter-Collector-Diensten und Wetterdaten"
+    },
+    "paths": {
+        "/api/health": {
+            "get": {
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "Server is healthy"
+                    }
+                }
+            }
+        },
+        "/api/collectors": {
+            "get": {
+                "summary": "Get all collectors",
+                "responses": {
+                    "200": {
+                        "description": "List of all collectors"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new collector",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "locationType": {
+                                        "type": "string"
+                                    },
+                                    "coordinates": {
+                                        "type": "object",
+                                        "properties": {
+                                            "lat": {
+                                                "type": "integer"
+                                            },
+                                            "lon": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "attributes": {
+                                        "type": "object"
+                                    },
+                                    "interval": {
+                                        "type": "integer"
+                                    },
+                                    "cronExpression": {
+                                        "type": "string"
+                                    },
+                                    "active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "location",
+                                    "attribute",
+                                    "interval"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Collector successfully created"
+                    }
+                }
+            }
+        },
+        "/api/collectors/{id}": {
+            "get": {
+                "summary": "Get collector status by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Collector status"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update a collector by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "attributes": {
+                                        "type": "object"
+                                    },
+                                    "interval": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "locationType": {
+                                        "type": "string"
+                                    },
+                                    "coordinates": {
+                                        "type": "object",
+                                        "properties": {
+                                            "lat": {
+                                                "type": "integer"
+                                            },
+                                            "lon": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "active": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Collector successfully updated"
+                        }
+                    }
+                },
+                "delete": {
+                    "summary": "Delete a collector by ID",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Collector successfully deleted"
+                        }
+                    }
+                }
+            },
+            "/api/collectors/{id}/start": {
+                "post": {
+                    "summary": "Start a collector by ID",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Collector successfully started"
+                        }
+                    }
+                }
+            },
+            "/api/collectors/{id}/stop": {
+                "post": {
+                    "summary": "Stop a collector by ID",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Collector successfully stopped"
+                        }
+                    }
+                }
+            },
+            "/api/weather": {
+                "get": {
+                    "summary": "Get all weather data",
+                    "responses": {
+                        "200": {
+                            "description": "List of all weather data"
+                        }
+                    }
+                }
+            },
+            "/api/weather/location/{location}": {
+                "get": {
+                    "summary": "Get latest weather data by location",
+                    "parameters": [
+                        {
+                            "name": "location",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Latest weather data for the specified location"
+                        }
+                    }
+                }
+            },
+            "/api/weather/collector/{id}": {
+                "get": {
+                    "summary": "Get weather data by collector ID",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Weather data for the specified collector ID"
+                        }
+                    }
+                }
+            },
+            "/api/weather/current/{location}": {
+                "get": {
+                    "summary": "Fetch current weather data by location",
+                    "parameters": [
+                        {
+                            "name": "location",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Current weather data for the specified location"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
